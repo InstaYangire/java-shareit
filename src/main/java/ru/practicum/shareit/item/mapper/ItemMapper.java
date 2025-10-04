@@ -21,11 +21,8 @@ public class ItemMapper {
 
     // from Dto to Item
     public static Item toItem(ItemDto dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
         return Item.builder()
-                .id(dto.getId())
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .available(dto.getAvailable())

@@ -19,11 +19,8 @@ public class UserMapper {
 
     // from Dto to User
     public static User toUser(UserDto dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
         return User.builder()
-                .id(dto.getId())
                 .name(dto.getName())
                 .email(dto.getEmail())
                 .build();

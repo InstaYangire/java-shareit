@@ -3,7 +3,6 @@ package ru.practicum.shareit.item;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.error.ForbiddenException;
 import ru.practicum.shareit.error.NotFoundException;
-import ru.practicum.shareit.error.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -26,7 +25,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto create(Long ownerId, ItemDto itemDto) {
-        validateItem(itemDto);
 
         if (!userService.existsById(ownerId)) {
             throw new NotFoundException("Owner not found with id: " + ownerId);
@@ -91,17 +89,5 @@ public class ItemServiceImpl implements ItemService {
                 )
                 .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
-    }
-
-    private void validateItem(ItemDto itemDto) {
-        if (itemDto.getName() == null || itemDto.getName().isBlank()) {
-            throw new ValidationException("Item name must not be empty");
-        }
-        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank()) {
-            throw new ValidationException("Item description must not be empty");
-        }
-        if (itemDto.getAvailable() == null) {
-            throw new ValidationException("Item availability must be specified");
-        }
     }
 }

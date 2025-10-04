@@ -3,7 +3,6 @@ package ru.practicum.shareit.user;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.error.ConflictException;
 import ru.practicum.shareit.error.NotFoundException;
-import ru.practicum.shareit.error.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 
@@ -17,7 +16,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto create(UserDto userDto) {
-        validateUser(userDto);
 
         // email uniqueness check
         if (users.values().stream().anyMatch(u -> u.getEmail().equals(userDto.getEmail()))) {
@@ -79,14 +77,5 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean existsById(Long id) {
         return users.containsKey(id);
-    }
-
-    private void validateUser(UserDto userDto) {
-        if (userDto.getEmail() == null || userDto.getEmail().isBlank()) {
-            throw new ValidationException("Email must not be empty");
-        }
-        if (!userDto.getEmail().contains("@")) {
-            throw new ValidationException("Email must be valid: " + userDto.getEmail());
-        }
     }
 }
