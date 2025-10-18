@@ -1,43 +1,45 @@
 package ru.practicum.shareit.user;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.error.ConflictException;
 import ru.practicum.shareit.error.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
+import ru.practicum.shareit.user.model.User;
 
-import java.util.*;
+import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final Map<Long, User> users = new HashMap<>();
-    private long idCounter = 1;
+    private final UserRepository userRepository;
 
+    @Transactional
     @Override
     public UserDto create(UserDto userDto) {
-
-        // email uniqueness check
-        if (users.values().stream().anyMatch(u -> u.getEmail().equals(userDto.getEmail()))) {
+        if (userRepository.findAll().stream()
+                .anyMatch(u -> u.getEmail().equals(userDto.getEmail()))) {
             throw new ConflictException("Email already in use: " + userDto.getEmail());
         }
 
         User user = UserMapper.toUser(userDto);
-        user.setId(idCounter++);
-        users.put(user.getId(), user);
-        return UserMapper.toUserDto(user);
+        User saved = userRepository.save(user);
+        return UserMapper.toUserDto(saved);
     }
 
+    @Transactional
     @Override
     public UserDto update(Long id, UserDto userDto) {
-        User existing = users.get(id);
-        if (existing == null) {
-            throw new NotFoundException("User with id " + id + " not found");
-        }
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
 
-        // checking email if it changes
         if (userDto.getEmail() != null && !userDto.getEmail().equals(existing.getEmail())) {
-            if (users.values().stream().anyMatch(u -> u.getEmail().equals(userDto.getEmail()))) {
+            if (userRepository.findAll().stream()
+                    .anyMatch(u -> u.getEmail().equals(userDto.getEmail()))) {
                 throw new ConflictException("Email already in use: " + userDto.getEmail());
             }
             existing.setEmail(userDto.getEmail());
@@ -47,35 +49,34 @@ public class UserServiceImpl implements UserService {
             existing.setName(userDto.getName());
         }
 
-        return UserMapper.toUserDto(existing);
+        return UserMapper.toUserDto(userRepository.save(existing));
     }
 
     @Override
     public UserDto getById(Long id) {
-        User user = users.get(id);
-        if (user == null) {
-            throw new NotFoundException("User with id " + id + " not found");
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
         return UserMapper.toUserDto(user);
     }
 
     @Override
     public List<UserDto> getAll() {
-        return users.values().stream()
+        return userRepository.findAll().stream()
                 .map(UserMapper::toUserDto)
                 .toList();
     }
 
+    @Transactional
     @Override
     public void delete(Long id) {
-        if (!users.containsKey(id)) {
+        if (!userRepository.existsById(id)) {
             throw new NotFoundException("User with id " + id + " not found");
         }
-        users.remove(id);
+        userRepository.deleteById(id);
     }
 
     @Override
     public boolean existsById(Long id) {
-        return users.containsKey(id);
+        return userRepository.existsById(id);
     }
 }
