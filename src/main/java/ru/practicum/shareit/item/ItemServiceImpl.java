@@ -72,7 +72,7 @@ public class ItemServiceImpl implements ItemService {
             var now = LocalDateTime.now();
 
             var last = bookings.stream()
-                    .filter(b -> b.getStatus() == BookingStatus.APPROVED && b.getStart().isBefore(now))
+                    .filter(b -> b.getStatus() == BookingStatus.APPROVED && b.getEnd().isBefore(now))
                     .max((b1, b2) -> b1.getEnd().compareTo(b2.getEnd()))
                     .map(BookingMapper::toShortDto)
                     .orElse(null);
@@ -107,7 +107,7 @@ public class ItemServiceImpl implements ItemService {
                     var now = LocalDateTime.now();
 
                     var last = bookings.stream()
-                            .filter(b -> b.getStatus() == BookingStatus.APPROVED && b.getStart().isBefore(now))
+                            .filter(b -> b.getStatus() == BookingStatus.APPROVED && b.getEnd().isBefore(now))
                             .max((b1, b2) -> b1.getEnd().compareTo(b2.getEnd()))
                             .map(BookingMapper::toShortDto)
                             .orElse(null);
@@ -127,12 +127,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> search(String text) {
-        if (text == null || text.isBlank()) return Collections.emptyList();
-        String lower = text.toLowerCase();
-        return itemRepository.findAll().stream()
-                .filter(Item::getAvailable)
-                .filter(item -> (item.getName() != null && item.getName().toLowerCase().contains(lower)) ||
-                        (item.getDescription() != null && item.getDescription().toLowerCase().contains(lower)))
+        if (text == null || text.isBlank()) {
+            return Collections.emptyList();
+        }
+        return itemRepository.search(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
     }
