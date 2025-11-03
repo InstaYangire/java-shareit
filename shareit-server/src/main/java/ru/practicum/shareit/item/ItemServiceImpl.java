@@ -20,10 +20,7 @@ import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,12 +43,7 @@ public class ItemServiceImpl implements ItemService {
 
         Item item = ItemMapper.toItem(itemDto, owner);
 
-        if (itemDto.getRequest() != null && itemDto.getRequest().getId() != null) {
-            ItemRequest request = itemRequestRepository.findById(itemDto.getRequest().getId())
-                    .orElseThrow(() -> new NotFoundException(
-                            "Request not found with id: " + itemDto.getRequest().getId()));
-            item.setRequest(request);
-        } else if (itemDto.getRequestId() != null) {
+        if (itemDto.getRequestId() != null) {
             ItemRequest request = itemRequestRepository.findById(itemDto.getRequestId())
                     .orElseThrow(() -> new NotFoundException(
                             "Request not found with id: " + itemDto.getRequestId()));
@@ -67,13 +59,23 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto update(Long itemId, Long ownerId, ItemDto itemDto) {
         Item existing = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Item with id " + itemId + " not found"));
+
         if (!existing.getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("Only owner can update item");
         }
-        if (itemDto.getName() != null && !itemDto.getName().isBlank()) existing.setName(itemDto.getName());
-        if (itemDto.getDescription() != null && !itemDto.getDescription().isBlank())
+
+        if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
+            existing.setName(itemDto.getName());
+        }
+
+        if (itemDto.getDescription() != null && !itemDto.getDescription().isBlank()) {
             existing.setDescription(itemDto.getDescription());
-        if (itemDto.getAvailable() != null) existing.setAvailable(itemDto.getAvailable());
+        }
+
+        if (itemDto.getAvailable() != null) {
+            existing.setAvailable(itemDto.getAvailable());
+        }
+
         return ItemMapper.toItemDto(itemRepository.save(existing));
     }
 
@@ -163,9 +165,6 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Item not found with id: " + itemId));
-
-        ZoneId systemZone = ZoneId.systemDefault();
-        ZoneOffset offset = systemZone.getRules().getOffset(Instant.now());
 
         LocalDateTime now = LocalDateTime.now();
 

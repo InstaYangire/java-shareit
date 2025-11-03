@@ -2,13 +2,12 @@ package ru.practicum.shareit.booking;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.MockedStatic;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,98 +19,128 @@ import static org.mockito.Mockito.*;
 
 class BookingClientTest {
 
-    @Mock
     private RestTemplate restTemplate;
-
-    @InjectMocks
     private BookingClient bookingClient;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        bookingClient = new BookingClient(restTemplate);
-        ReflectionTestUtils.setField(bookingClient, "serverUrl", "http://localhost:9090");
+        restTemplate = mock(RestTemplate.class);
+        RestTemplateBuilder builder = mock(RestTemplateBuilder.class);
+        when(builder.uriTemplateHandler(any())).thenReturn(builder);
+        when(builder.build()).thenReturn(restTemplate);
+        bookingClient = new BookingClient("http://localhost", builder);
     }
 
     @Test
-    void create_shouldCallPostAndReturnOk() {
+    void create_success() {
         BookingDto dto = BookingDto.builder()
+                .itemId(1L)
                 .start(LocalDateTime.now().plusDays(1))
                 .end(LocalDateTime.now().plusDays(2))
-                .itemId(2L)
                 .build();
 
-        ResponseEntity<Object> expected = ResponseEntity.ok().build();
+        HttpEntity<Object> request = new HttpEntity<>(dto);
+        ResponseEntity<Object> expected = ResponseEntity.ok("ok");
 
-        when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenReturn(expected);
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(dto, 1L)).thenReturn(request);
+            when(restTemplate.postForEntity(anyString(), eq(request), eq(Object.class)))
+                    .thenReturn(expected);
 
-        ResponseEntity<Object> response = bookingClient.create(1L, dto);
+            ResponseEntity<Object> result = bookingClient.create(1L, dto);
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(restTemplate).postForEntity(contains("/bookings"), any(), eq(Object.class));
+            assertEquals(200, result.getStatusCodeValue());
+            assertEquals("ok", result.getBody());
+            verify(restTemplate).postForEntity(contains("/bookings"), eq(request), eq(Object.class));
+        }
     }
 
     @Test
-    void create_shouldHandleHttpStatusCodeException() {
+    void create_handlesHttpStatusCodeException() {
         BookingDto dto = BookingDto.builder()
+                .itemId(2L)
                 .start(LocalDateTime.now().plusDays(1))
                 .end(LocalDateTime.now().plusDays(2))
-                .itemId(2L)
                 .build();
 
+        HttpEntity<Object> request = new HttpEntity<>(dto);
         HttpStatusCodeException exception = mock(HttpStatusCodeException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-        when(exception.getResponseBodyAsString()).thenReturn("Error message");
+        when(exception.getResponseBodyAsString()).thenReturn("error");
 
-        when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenThrow(exception);
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(dto, 2L)).thenReturn(request);
+            when(restTemplate.postForEntity(anyString(), eq(request), eq(Object.class)))
+                    .thenThrow(exception);
 
-        ResponseEntity<Object> response = bookingClient.create(1L, dto);
+            ResponseEntity<Object> result = bookingClient.create(2L, dto);
 
-        assertEquals(400, response.getStatusCodeValue());
-        assertEquals("Error message", response.getBody());
+            assertEquals(400, result.getStatusCodeValue());
+            assertEquals("error", result.getBody());
+        }
     }
 
     @Test
-    void approve_shouldCallPatch() {
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.PATCH), any(), eq(Object.class)))
-                .thenReturn(ResponseEntity.ok().build());
+    void approve_success() {
+        ResponseEntity<Object> expected = ResponseEntity.ok("patched");
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(null, 3L)).thenReturn(new HttpEntity<>(null));
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.PATCH), any(), eq(Object.class)))
+                    .thenReturn(expected);
 
-        ResponseEntity<Object> response = bookingClient.approve(2L, 5L, true);
+            ResponseEntity<Object> result = bookingClient.approve(3L, 5L, true);
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(restTemplate).exchange(contains("/bookings/5"), eq(HttpMethod.PATCH), any(), eq(Object.class));
+            assertEquals(200, result.getStatusCodeValue());
+            assertEquals("patched", result.getBody());
+            verify(restTemplate).exchange(contains("/bookings/5"), eq(HttpMethod.PATCH), any(), eq(Object.class));
+        }
     }
 
     @Test
-    void getById_shouldCallGet() {
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
-                .thenReturn(ResponseEntity.ok().build());
+    void getById_success() {
+        ResponseEntity<Object> expected = ResponseEntity.ok("one");
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(null, 4L)).thenReturn(new HttpEntity<>(null));
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
+                    .thenReturn(expected);
 
-        ResponseEntity<Object> response = bookingClient.getById(3L, 6L);
+            ResponseEntity<Object> result = bookingClient.getById(4L, 10L);
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(restTemplate).exchange(contains("/bookings/6"), eq(HttpMethod.GET), any(), eq(Object.class));
+            assertEquals(200, result.getStatusCodeValue());
+            assertEquals("one", result.getBody());
+            verify(restTemplate).exchange(contains("/bookings/10"), eq(HttpMethod.GET), any(), eq(Object.class));
+        }
     }
 
     @Test
-    void getAllByUser_shouldCallGet() {
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
-                .thenReturn(ResponseEntity.ok().build());
+    void getAllByUser_success() {
+        ResponseEntity<Object> expected = ResponseEntity.ok("list");
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(null, 6L)).thenReturn(new HttpEntity<>(null));
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
+                    .thenReturn(expected);
 
-        ResponseEntity<Object> response = bookingClient.getAllByUser(4L, "ALL");
+            ResponseEntity<Object> result = bookingClient.getAllByUser(6L, "ALL");
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(restTemplate).exchange(contains("/bookings?state=ALL"), eq(HttpMethod.GET), any(), eq(Object.class));
+            assertEquals(200, result.getStatusCodeValue());
+            assertEquals("list", result.getBody());
+            verify(restTemplate).exchange(contains("/bookings?state=ALL"), eq(HttpMethod.GET), any(), eq(Object.class));
+        }
     }
 
     @Test
-    void getAllByOwner_shouldCallGet() {
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
-                .thenReturn(ResponseEntity.ok().build());
+    void getAllByOwner_success() {
+        ResponseEntity<Object> expected = ResponseEntity.ok("ownerList");
+        try (MockedStatic<HttpUtils> mocked = mockStatic(HttpUtils.class)) {
+            mocked.when(() -> HttpUtils.makeRequest(null, 7L)).thenReturn(new HttpEntity<>(null));
+            when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), eq(Object.class)))
+                    .thenReturn(expected);
 
-        ResponseEntity<Object> response = bookingClient.getAllByOwner(5L, "WAITING");
+            ResponseEntity<Object> result = bookingClient.getAllByOwner(7L, "WAITING");
 
-        assertEquals(200, response.getStatusCodeValue());
-        verify(restTemplate).exchange(contains("/bookings/owner?state=WAITING"), eq(HttpMethod.GET), any(), eq(Object.class));
+            assertEquals(200, result.getStatusCodeValue());
+            assertEquals("ownerList", result.getBody());
+            verify(restTemplate).exchange(contains("/bookings/owner?state=WAITING"), eq(HttpMethod.GET), any(), eq(Object.class));
+        }
     }
 }

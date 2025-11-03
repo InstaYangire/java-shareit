@@ -6,7 +6,6 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemShortDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequest;
-import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
@@ -18,12 +17,14 @@ class ItemMapperTest {
     @Test
     void toItemDto_shouldMapCorrectly() {
         User owner = User.builder().id(1L).name("John").email("j@j.com").build();
+        ItemRequest request = ItemRequest.builder().id(9L).build();
         Item item = Item.builder()
                 .id(2L)
                 .name("Hammer")
                 .description("Steel hammer")
                 .available(true)
                 .owner(owner)
+                .request(request)
                 .build();
 
         ItemDto dto = ItemMapper.toItemDto(item);
@@ -33,6 +34,7 @@ class ItemMapperTest {
         assertEquals(item.getDescription(), dto.getDescription());
         assertEquals(item.getAvailable(), dto.getAvailable());
         assertEquals(owner.getId(), dto.getOwnerId());
+        assertEquals(9L, dto.getRequestId());
     }
 
     @Test
@@ -85,7 +87,7 @@ class ItemMapperTest {
         assertEquals(dto.getId(), item.getId());
         assertEquals("Saw", item.getName());
         assertEquals("Wood saw", item.getDescription());
-        assertEquals(true, item.getAvailable());
+        assertTrue(item.getAvailable());
         assertEquals(owner, item.getOwner());
         assertNull(item.getRequest());
     }
@@ -93,17 +95,17 @@ class ItemMapperTest {
     @Test
     void toItem_shouldMapWithRequestId() {
         User owner = User.builder().id(1L).build();
-        ItemRequestDto requestDto = ItemRequestDto.builder().id(7L).build();
         ItemDto dto = ItemDto.builder()
                 .id(20L)
                 .name("Wrench")
                 .description("Adjustable wrench")
                 .available(true)
-                .request(requestDto)
+                .requestId(7L)
                 .build();
 
         Item item = ItemMapper.toItem(dto, owner);
 
+        assertNotNull(item.getRequest());
         assertEquals(7L, item.getRequest().getId());
     }
 

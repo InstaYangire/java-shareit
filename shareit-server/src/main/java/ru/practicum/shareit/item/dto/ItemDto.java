@@ -1,13 +1,10 @@
 package ru.practicum.shareit.item.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.request.dto.ItemRequestDto;
 
 import java.util.List;
 
@@ -16,27 +13,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ItemDto {
-
     private Long id;
-
-    @NotBlank(message = "Item name must not be blank")
     private String name;
-
-    @NotBlank(message = "Item description must not be blank")
     private String description;
-
-    @NotNull(message = "Item availability must be specified")
     private Boolean available;
-
     private Long ownerId;
-
     private BookingDto lastBooking;
-
     private BookingDto nextBooking;
-
     private List<CommentDto> comments;
-
-    private ItemRequestDto request;
-
     private Long requestId;
 }

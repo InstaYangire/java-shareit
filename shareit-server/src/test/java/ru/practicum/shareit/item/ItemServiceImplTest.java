@@ -67,7 +67,9 @@ class ItemServiceImplTest {
     void shouldCreateItemWithoutRequest() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(itemRepository.save(any())).thenReturn(item);
+
         ItemDto result = service.create(1L, itemDto);
+
         assertEquals(itemDto.getName(), result.getName());
         verify(itemRepository, times(1)).save(any());
     }
@@ -76,10 +78,13 @@ class ItemServiceImplTest {
     void shouldCreateItemWithRequestId() {
         ItemRequest request = new ItemRequest(10L, "Need hammer", 2L, LocalDateTime.now());
         itemDto.setRequestId(10L);
+
         when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(itemRequestRepository.findById(10L)).thenReturn(Optional.of(request));
         when(itemRepository.save(any())).thenReturn(item);
+
         ItemDto result = service.create(1L, itemDto);
+
         assertNotNull(result);
         verify(itemRequestRepository).findById(10L);
     }
@@ -88,16 +93,6 @@ class ItemServiceImplTest {
     void shouldThrowWhenOwnerNotFound() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> service.create(1L, itemDto));
-    }
-
-    @Test
-    void shouldIgnoreRequestIfItHasNullId() {
-        itemDto.setRequest(null);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
-        when(itemRepository.save(any())).thenReturn(item);
-        ItemDto result = service.create(1L, itemDto);
-        assertNotNull(result);
-        verify(itemRepository).save(any());
     }
 
     @Test
@@ -113,7 +108,9 @@ class ItemServiceImplTest {
         ItemDto updateDto = ItemDto.builder().name("Updated Drill").available(false).build();
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(itemRepository.save(any())).thenReturn(item);
+
         ItemDto result = service.update(1L, 1L, updateDto);
+
         assertEquals("Updated Drill", result.getName());
         verify(itemRepository).save(any());
     }
@@ -123,6 +120,7 @@ class ItemServiceImplTest {
         User another = new User(2L, "Bob", "b@mail.com");
         item.setOwner(another);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
         assertThrows(ForbiddenException.class, () -> service.update(1L, 1L, itemDto));
     }
 
@@ -131,7 +129,9 @@ class ItemServiceImplTest {
         ItemDto updateDto = new ItemDto();
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(itemRepository.save(any())).thenReturn(item);
+
         ItemDto result = service.update(1L, 1L, updateDto);
+
         assertEquals(item.getName(), result.getName());
         verify(itemRepository).save(item);
     }
@@ -142,7 +142,9 @@ class ItemServiceImplTest {
         when(commentRepository.findAllByItem(item)).thenReturn(List.of(
                 Comment.builder().id(1L).text("Nice!").author(owner).item(item).created(LocalDateTime.now()).build()
         ));
+
         var result = service.getById(1L, 1L);
+
         assertEquals("Drill", result.getName());
         assertEquals(1, result.getComments().size());
     }
@@ -159,7 +161,9 @@ class ItemServiceImplTest {
         item.setOwner(another);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(commentRepository.findAllByItem(item)).thenReturn(List.of());
+
         var result = service.getById(1L, 1L);
+
         assertNull(result.getLastBooking());
         assertNull(result.getNextBooking());
     }
@@ -169,7 +173,9 @@ class ItemServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(itemRepository.findAllByOwner(owner)).thenReturn(List.of(item));
         when(commentRepository.findAllByItem(any())).thenReturn(List.of());
+
         var result = service.getByOwner(1L);
+
         assertEquals(1, result.size());
         verify(itemRepository).findAllByOwner(owner);
     }
@@ -186,7 +192,9 @@ class ItemServiceImplTest {
         when(itemRepository.findAllByOwner(owner)).thenReturn(List.of(item));
         when(commentRepository.findAllByItem(any())).thenReturn(List.of());
         when(bookingRepository.findAllByItem(any())).thenReturn(List.of());
+
         var result = service.getByOwner(1L);
+
         assertEquals(1, result.size());
         assertNull(result.get(0).getLastBooking());
     }
@@ -222,7 +230,9 @@ class ItemServiceImplTest {
         ).thenReturn(true);
         Comment comment = Comment.builder().id(1L).text("Good item").author(owner).item(item).build();
         when(commentRepository.save(any())).thenReturn(comment);
+
         CommentDto result = service.addComment(1L, 1L, commentDto);
+
         assertEquals("Good item", result.getText());
         verify(commentRepository).save(any());
     }
